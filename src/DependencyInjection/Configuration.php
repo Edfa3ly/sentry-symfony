@@ -56,6 +56,12 @@ class Configuration implements ConfigurationInterface
                         ->scalarNode('secret_key')->defaultNull()->end()
                         ->scalarNode('public_key')->defaultNull()->end()
                         ->scalarNode('project')->defaultValue(1)->end()
+                        ->variableNode('send_callback')
+                            ->validate()
+                            ->ifTrue($this->isNotAValidCallback())
+                            ->thenInvalid('Expecting callable or service reference, got %s')
+                        ->end()
+                        ->end()
                         ->booleanNode('auto_log_stacks')->defaultFalse()->end()
                         ->scalarNode('name')->defaultNull()->end()
                         ->scalarNode('site')->defaultNull()->end()
@@ -166,6 +172,21 @@ class Configuration implements ConfigurationInterface
             }
 
             return $value;
+        };
+    }
+
+    private function isNotAValidCallback(): \Closure
+    {
+        return static function ($value): bool {
+            if (is_callable($value)) {
+                return false;
+            }
+
+            if (is_string($value) && 0 === strpos($value, '@')) {
+                return false;
+            }
+
+            return true;
         };
     }
 }
